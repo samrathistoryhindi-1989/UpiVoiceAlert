@@ -32,20 +32,27 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
         val pkg = sbn?.packageName ?: return
-        val extras = sbn.notification.extras
+        val extras = sbn.notification?.extras ?: return
         val title = extras.getString("android.title") ?: ""
         val text = extras.getCharSequence("android.text")?.toString() ?: ""
         val fullText = "$title $text"
 
         var upiApp = ""
         when {
-            pkg.contains("google.android.apps.nbu.paisa.user") -> upiApp = "Google Pay"
-            pkg.contains("com.phonepe.app") -> upiApp = "PhonePe"
-            pkg.contains("net.one97.paytm") -> upiApp = "Paytm"
-            pkg.contains("in.org.npci.upiapp") -> upiApp = "BHIM"
+            pkg.contains("paisa") || pkg.contains("nbu") -> upiApp = "Google Pay"
+            pkg.contains("phonepe") -> upiApp = "PhonePe"
+            pkg.contains("paytm") -> upiApp = "Paytm"
+            pkg.contains("bhim") || pkg.contains("npci") -> upiApp = "BHIM"
+            pkg.contains("cred") -> upiApp = "CRED"
+            pkg.contains("amazon") -> upiApp = "Amazon Pay"
+            else -> {
+                if (fullText.contains("UPI", true) || fullText.contains("credited", true)) {
+                    upiApp = "Bank UPI"
+                }
+            }
         }
 
-        if (upiApp.isNotEmpty() && (fullText.contains("received", true) || fullText.contains("credited", true))) {
+        if (upiApp.isNotEmpty() && (fullText.contains("received", true) || fullText.contains("credited", true) || fullText.contains("deposited", true))) {
             val pattern = Pattern.compile("(?:Rs\\.?|INR|₹)\\s*([0-9,]+(?:\\.[0-9]{1,2})?)", Pattern.CASE_INSENSITIVE)
             val matcher = pattern.matcher(fullText)
             if (matcher.find()) {

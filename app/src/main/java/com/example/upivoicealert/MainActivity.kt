@@ -8,6 +8,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.speech.tts.TextToSpeech
 import android.view.View
 import android.widget.Button
 import android.widget.LinearLayout
@@ -29,44 +30,58 @@ import java.util.Date
 import java.util.Locale
 import java.util.concurrent.TimeUnit
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     private var konfettiView: KonfettiView? = null
     private var cardPayment: LinearLayout? = null
     private var tvAmount: TextView? = null
     private var tvUpiApp: TextView? = null
+    private var tts: TextToSpeech? = null
+    private var isTtsReady = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        tts = TextToSpeech(this, this)
 
         konfettiView = findViewById(R.id.konfettiView)
         cardPayment = findViewById(R.id.cardPayment)
         tvAmount = findViewById(R.id.tvAmount)
         tvUpiApp = findViewById(R.id.tvUpiApp)
 
-        checkPermissions()
+        findViewById<Button>(R.id.btnEnableNotification).setOnClickListener {
+            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+        }
 
-        findViewById<Button>(R.id.btnExportPdf)?.setOnClickListener {
+        findViewById<Button>(R.id.btnEnableOverlay).setOnClickListener {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                startActivity(intent)
+            } else {
+                Toast.makeText(this, "ఈ డివైస్‌కు అవసరం లేదు", Toast.LENGTH_SHORT).show()
+            }
+        }
+
+        findViewById<Button>(R.id.btnTestAlert).setOnClickListener {
+            triggerAlert("100", "PhonePe (Test)")
+        }
+
+        findViewById<Button>(R.id.btnExportPdf).setOnClickListener {
             exportToPdf()
         }
 
         handleIntent(intent)
     }
 
-    private fun checkPermissions() {
-        try {
-            val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
-            if (enabledListeners == null || !enabledListeners.contains(packageName)) {
-                Toast.makeText(this, "నోటిఫికేషన్ యాక్సెస్ ఆన్ చేయండి", Toast.LENGTH_SHORT).show()
-                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+    override fun onInit(status: Int) {
+        if (status == TextToSpeech.SUCCESS) {
+            val result = tts?.setLanguage(Locale("te", "IN"))
+            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                tts?.setLanguage(Locale.ENGLISH)
             }
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-                val overlayIntent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-                startActivity(overlayIntent)
-            }
-        } catch (_: Exception) {}
+            isTtsReady = true
+        }
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -79,14 +94,16 @@ class MainActivity : AppCompatActivity() {
         val amount = intent?.getStringExtra("AMOUNT")
         val app = intent?.getStringExtra("APP")
         if (amount != null && app != null) {
-            showCrackersAnimation(amount, app)
+            triggerAlert(amount, app)
         }
     }
 
-    private fun showCrackersAnimation(amount: String, upiApp: String) {
+    private fun triggerAlert(amount: String, appName: String) {
         tvAmount?.text = "₹ $amount"
-        tvUpiApp?.text = "$upiApp ద్వారా వచ్చింది"
+        tvUpiApp?.text = "$appName ద్వారా అందింది"
         cardPayment?.visibility = View.VISIBLE
+
+        speakTelugu("$appName ద్వారా $amount రూపాయలు అందాయి")
 
         val party = Party(
             speed = 10f,
@@ -94,10 +111,18 @@ class MainActivity : AppCompatActivity() {
             damping = 0.9f,
             spread = 360,
             colors = listOf(0xfce18a, 0xff726d, 0x22c55e, 0x3b82f6),
-            emitter = Emitter(duration = 200, TimeUnit.MILLISECONDS).max(150),
+            emitter = Emitter(duration = 250, TimeUnit.MILLISECONDS).max(200),
             position = Position.Relative(0.5, 0.4)
         )
         konfettiView?.start(party)
+    }
+
+    private fun speakTelugu(msg: String) {
+        if (isTtsReady) {
+            tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, "TEST_VOICE")
+        } else {
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun exportToPdf() {
@@ -135,5 +160,11 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this@MainActivity, "PDF సేవ్ చేయబడింది: ${file.name}", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    override fun onDestroy() {
+        tts?.stop()
+        tts?.shutdown()
+        super.onDestroy()
     }
 }

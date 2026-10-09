@@ -4,60 +4,95 @@
     android:layout_height="match_parent"
     android:background="#F3F4F6">
 
-    <LinearLayout
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp"
-        android:gravity="center">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="UPI Voice Alert"
-            android:textSize="22sp"
-            android:textStyle="bold"
-            android:textColor="#1F2937"
-            android:layout_marginBottom="20dp" />
-
-        <Button
-            android:id="@+id/btnExportPdf"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="PDF రిపోర్ట్ డౌన్‌లోడ్ చేయండి"
-            android:backgroundTint="#2563EB"
-            android:textColor="#FFFFFF" />
+        android:layout_height="match_parent"
+        android:padding="20dp">
 
         <LinearLayout
-            android:id="@+id/cardPayment"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:background="#FFFFFF"
-            android:padding="20dp"
-            android:layout_marginTop="30dp"
-            android:visibility="gone"
-            android:gravity="center">
+            android:gravity="center_horizontal">
 
             <TextView
-                android:id="@+id/tvAmount"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="₹ 0"
-                android:textSize="32sp"
+                android:text="UPI Voice Alert"
+                android:textSize="26sp"
                 android:textStyle="bold"
-                android:textColor="#16A34A" />
+                android:textColor="#1F2937"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="24dp" />
 
-            <TextView
-                android:id="@+id/tvUpiApp"
-                android:layout_width="wrap_content"
+            <Button
+                android:id="@+id/btnEnableNotification"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="UPI App"
-                android:textSize="18sp"
-                android:textColor="#4B5563"
-                android:layout_marginTop="8dp" />
+                android:text="1. నోటిఫికేషన్ పర్మిషన్ ఆన్ చేయండి"
+                android:backgroundTint="#F59E0B"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btnEnableOverlay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="2. స్క్రీన్ పాపప్ (Overlay) పర్మిషన్"
+                android:backgroundTint="#8B5CF6"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btnTestAlert"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🔊 టెస్ట్ వాయిస్ & పాపప్ (Test Alert)"
+                android:backgroundTint="#10B981"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="12dp" />
+
+            <Button
+                android:id="@+id/btnExportPdf"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="📄 PDF రిపోర్ట్ డౌన్‌లోడ్ చేయండి"
+                android:backgroundTint="#2563EB"
+                android:textColor="#FFFFFF"
+                android:layout_marginBottom="24dp" />
+
+            <LinearLayout
+                android:id="@+id/cardPayment"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="24dp"
+                android:visibility="gone"
+                android:elevation="6dp"
+                android:gravity="center">
+
+                <TextView
+                    android:id="@+id/tvAmount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₹ 0"
+                    android:textSize="36sp"
+                    android:textStyle="bold"
+                    android:textColor="#16A34A" />
+
+                <TextView
+                    android:id="@+id/tvUpiApp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="UPI App"
+                    android:textSize="18sp"
+                    android:textColor="#4B5563"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+
         </LinearLayout>
-    </LinearLayout>
+    </ScrollView>
 
     <nl.dionsegijn.konfetti.xml.KonfettiView
         android:id="@+id/konfettiView"
