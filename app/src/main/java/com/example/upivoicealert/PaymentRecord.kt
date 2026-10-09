@@ -1,38 +1,70 @@
 package com.example.upivoicealert
 
+import android.content.ContentValues
 import android.content.Context
-import androidx.room.*
+import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteOpenHelper
 
-@Entity(tableName = "payments")
 data class PaymentRecord(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    val id: Long = 0,
     val amount: String,
     val upiApp: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long
 )
 
-@Dao
-interface PaymentDao {
-    @Insert
-    suspend fun insertPayment(record: PaymentRecord)
+class AppDatabase(context: Context) : SQLiteOpenHelper(context, "upi_payments.db", null, 1) {
 
-    @Query("SELECT * FROM payments ORDER BY timestamp DESC")
-    suspend fun getAllPayments(): List<PaymentRecord>
-}
+    override fun onCreate(db: SQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE payments (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    "amount TEXT, " +
+                    "upiApp TEXT, " +
+                    "timestamp INTEGER)"
+        )
+    }
 
-@Database(entities = [PaymentRecord::class], version = 1)
-abstract class AppDatabase : RoomDatabase() {
-    abstract fun paymentDao(): PaymentDao
+    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+        db.execSQL("DROP TABLE IF EXISTS payments")
+        onCreate(db)
+    }
+
+    fun insertPayment(amount: String, upiApp: String) {
+        val db = writableDatabase
+        val values = ContentValues().apply {
+            put("amount", amount)
+            put("upiApp", upiApp)
+            put("timestamp", System.currentTimeMillis())
+        }
+        db.insert("payments", null, values)
+    }
+
+    fun getAllPayments(): List<PaymentRecord> {
+        val list = mutableListOf<PaymentRecord>()
+        val db = readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM payments ORDER BY id DESC", null)
+        if (cursor.moveToFirst()) {
+            do {
+                val record = PaymentRecord(
+                    id = cursor.getLong(cursor.getColumnIndexOrThrow("id")),
+                    amount = cursor.getString(cursor.getColumnIndexOrThrow("amount")),
+                    upiApp = cursor.getString(cursor.getColumnIndexOrThrow("upiApp")),
+                    timestamp = cursor.getLong(cursor.getColumnIndexOrThrow("timestamp"))
+                )
+                list.add(record)
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return list
+    }
 
     companion object {
-        @Volatile private var INSTANCE: AppDatabase? = null
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
+
         fun getInstance(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
-                Room.databaseBuilder(
-                    context.applicationContext,
-                    AppDatabase::class.java,
-                    "upi_records.db"
-                ).build().also { INSTANCE = it }
+                INSTANCE ?: AppDatabase(context.applicationContext).also { INSTANCE = it }
             }
         }
     }

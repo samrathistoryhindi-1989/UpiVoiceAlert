@@ -24,7 +24,7 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         if (status == TextToSpeech.SUCCESS) {
             val result = tts?.setLanguage(Locale("te", "IN"))
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                tts?.language = Locale("en", "IN")
+                tts?.setLanguage(Locale.ENGLISH)
             }
             isTtsReady = true
         }
@@ -35,42 +35,35 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         val extras = sbn.notification.extras
         val title = extras.getString("android.title") ?: ""
         val text = extras.getCharSequence("android.text")?.toString() ?: ""
-        val content = "$title $text"
+        val fullText = "$title $text"
 
-        val upiApp = when (pkg) {
-            "com.google.android.apps.nbu.paisa.user" -> "Google Pay"
-            "com.phonepe.app" -> "PhonePe"
-            "net.one97.paytm" -> "Paytm"
-            "in.org.npci.upiapp" -> "BHIM"
-            else -> null
+        var upiApp = ""
+        when {
+            pkg.contains("google.android.apps.nbu.paisa.user") -> upiApp = "Google Pay"
+            pkg.contains("com.phonepe.app") -> upiApp = "PhonePe"
+            pkg.contains("net.one97.paytm") -> upiApp = "Paytm"
+            pkg.contains("in.org.npci.upiapp") -> upiApp = "BHIM"
         }
 
-        if (upiApp != null && (content.contains("received", true) || content.contains("credited", true))) {
-            val pattern = Pattern.compile("(?:Rs\\.?|INR|₹)\\s*([0-9,]+(?:\\.[0-9]{2})?)", Pattern.CASE_INSENSITIVE)
-            val matcher = pattern.matcher(content)
-
+        if (upiApp.isNotEmpty() && (fullText.contains("received", true) || fullText.contains("credited", true))) {
+            val pattern = Pattern.compile("(?:Rs\\.?|INR|₹)\\s*([0-9,]+(?:\\.[0-9]{1,2})?)", Pattern.CASE_INSENSITIVE)
+            val matcher = pattern.matcher(fullText)
             if (matcher.find()) {
                 val amount = matcher.group(1)?.replace(",", "") ?: "0"
 
-                // 1. వాయిస్ అలర్ట్
                 if (isTtsReady) {
                     val msg = "$upiApp ద్వారా $amount రూపాయలు అందాయి"
                     tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, "UPI_VOICE")
                 }
 
-                // 2. డేటాబేస్ లో సేవ్
                 CoroutineScope(Dispatchers.IO).launch {
-                    AppDatabase.getInstance(applicationContext).paymentDao().insertPayment(
-                        PaymentRecord(amount = amount, upiApp = upiApp)
-                    )
+                    AppDatabase.getInstance(applicationContext).insertPayment(amount, upiApp)
                 }
 
-                // 3. హోమ్ స్క్రీన్ పై డైరెక్ట్‌గా పాపప్ ఓపెన్ చేయడం
                 val popupIntent = Intent(applicationContext, MainActivity::class.java).apply {
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                     putExtra("AMOUNT", amount)
                     putExtra("APP", upiApp)
-                    putExtra("IS_POPUP", true)
                 }
                 startActivity(popupIntent)
             }
