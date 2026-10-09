@@ -31,10 +31,10 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var konfettiView: KonfettiView
-    private lateinit var cardPayment: LinearLayout
-    private lateinit var tvAmount: TextView
-    private lateinit var tvUpiApp: TextView
+    private var konfettiView: KonfettiView? = null
+    private var cardPayment: LinearLayout? = null
+    private var tvAmount: TextView? = null
+    private var tvUpiApp: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -45,23 +45,28 @@ class MainActivity : AppCompatActivity() {
         tvAmount = findViewById(R.id.tvAmount)
         tvUpiApp = findViewById(R.id.tvUpiApp)
 
-        val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
-        if (enabledListeners == null || !enabledListeners.contains(packageName)) {
-            Toast.makeText(this, "నోటిఫికేషన్ యాక్సెస్ పర్మిషన్ ఆన్ చేయండి", Toast.LENGTH_LONG).show()
-            startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
-        }
+        checkPermissions()
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
-            Toast.makeText(this, "పాపప్ కోసం Overlay పర్మిషన్ ఇవ్వండి", Toast.LENGTH_LONG).show()
-            val overlayIntent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
-            startActivity(overlayIntent)
-        }
-
-        findViewById<Button>(R.id.btnExportPdf).setOnClickListener {
+        findViewById<Button>(R.id.btnExportPdf)?.setOnClickListener {
             exportToPdf()
         }
 
         handleIntent(intent)
+    }
+
+    private fun checkPermissions() {
+        try {
+            val enabledListeners = Settings.Secure.getString(contentResolver, "enabled_notification_listeners")
+            if (enabledListeners == null || !enabledListeners.contains(packageName)) {
+                Toast.makeText(this, "నోటిఫికేషన్ యాక్సెస్ ఆన్ చేయండి", Toast.LENGTH_SHORT).show()
+                startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS))
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
+                val overlayIntent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
+                startActivity(overlayIntent)
+            }
+        } catch (_: Exception) {}
     }
 
     override fun onNewIntent(intent: Intent) {
@@ -79,9 +84,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showCrackersAnimation(amount: String, upiApp: String) {
-        tvAmount.text = "₹ $amount"
-        tvUpiApp.text = "$upiApp ద్వారా వచ్చింది"
-        cardPayment.visibility = View.VISIBLE
+        tvAmount?.text = "₹ $amount"
+        tvUpiApp?.text = "$upiApp ద్వారా వచ్చింది"
+        cardPayment?.visibility = View.VISIBLE
 
         val party = Party(
             speed = 10f,
@@ -92,7 +97,7 @@ class MainActivity : AppCompatActivity() {
             emitter = Emitter(duration = 200, TimeUnit.MILLISECONDS).max(150),
             position = Position.Relative(0.5, 0.4)
         )
-        konfettiView.start(party)
+        konfettiView?.start(party)
     }
 
     private fun exportToPdf() {
