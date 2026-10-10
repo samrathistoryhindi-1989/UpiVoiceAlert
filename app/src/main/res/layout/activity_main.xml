@@ -1,75 +1,219 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:orientation="vertical"
     android:background="#F3F4F6">
+
+    <!-- Header & Daily Summary -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="#1E3A8A"
+        android:padding="16dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="UPI Voice Alert Pro"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:weightSum="2">
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ఈరోజు కలెక్షన్"
+                    android:textColor="#93C5FD"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/tvTodayTotal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="₹ 0.00"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="vertical"
+                android:gravity="end">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="మొత్తం పేమెంట్లు"
+                    android:textColor="#93C5FD"
+                    android:textSize="12sp" />
+                <TextView
+                    android:id="@+id/tvTodayCount"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0"
+                    android:textColor="#FFFFFF"
+                    android:textSize="22sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
+    </LinearLayout>
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:padding="20dp">
+        android:layout_height="0dp"
+        android:layout_weight="1">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:gravity="center_horizontal">
+            android:padding="16dp">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="UPI Voice Alert"
-                android:textSize="26sp"
-                android:textStyle="bold"
-                android:textColor="#1F2937"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="24dp" />
-
-            <Button
-                android:id="@+id/btnEnableNotification"
+            <!-- Language Selection Card -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="1. నోటిఫికేషన్ పర్మిషన్ ఆన్ చేయండి"
-                android:backgroundTint="#F59E0B"
-                android:textColor="#FFFFFF"
-                android:layout_marginBottom="12dp" />
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="12dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="12dp">
 
-            <Button
-                android:id="@+id/btnEnableOverlay"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🌐 వాయిస్ భాషను ఎంచుకోండి (Language)"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#374151" />
+
+                <Spinner
+                    android:id="@+id/spinnerLanguage"
+                    android:layout_width="match_parent"
+                    android:layout_height="48dp"
+                    android:layout_marginTop="6dp" />
+            </LinearLayout>
+
+            <!-- Volume Control Card -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="2. స్క్రీన్ పాపప్ (Overlay) పర్మిషన్"
-                android:backgroundTint="#8B5CF6"
-                android:textColor="#FFFFFF"
-                android:layout_marginBottom="12dp" />
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="12dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="12dp">
 
-            <Button
-                android:id="@+id/btnTestAlert"
+                <TextView
+                    android:id="@+id/tvVolumeLevel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🔊 వాల్యూమ్ స్థాయి: 100%"
+                    android:textSize="14sp"
+                    android:textStyle="bold"
+                    android:textColor="#374151" />
+
+                <SeekBar
+                    android:id="@+id/seekVolume"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:max="100"
+                    android:progress="100"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+
+            <!-- Custom Voice Message Template Card -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🔊 టెస్ట్ వాయిస్ మరియు పాపప్"
-                android:backgroundTint="#10B981"
-                android:textColor="#FFFFFF"
-                android:layout_marginBottom="12dp" />
+                android:orientation="vertical"
+                android:background="#FFFFFF"
+                android:padding="12dp"
+                android:elevation="2dp"
+                android:layout_marginBottom="12dp">
 
-            <Button
-                android:id="@+id/btnExportPdf"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="🎙 కస్టమ్ వాయిస్ టెక్స్ట్ ({app}, {amount} ఆటోమేటిక్)"
+                    android:textSize="13sp"
+                    android:textStyle="bold"
+                    android:textColor="#374151" />
+
+                <EditText
+                    android:id="@+id/etCustomVoice"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="{app} ద్వారా {amount} రూపాయలు అందాయి"
+                    android:textSize="14sp"
+                    android:layout_marginTop="6dp" />
+
+                <Button
+                    android:id="@+id/btnSaveCustomVoice"
+                    android:layout_width="wrap_content"
+                    android:layout_height="38dp"
+                    android:text="వాయిస్ సేవ్ చేయండి"
+                    android:textSize="12sp"
+                    android:backgroundTint="#2563EB"
+                    android:textColor="#FFFFFF"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="4dp" />
+            </LinearLayout>
+
+            <!-- Action Buttons -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="📄 PDF రిపోర్ట్ డౌన్‌లోడ్ చేయండి"
-                android:backgroundTint="#2563EB"
-                android:textColor="#FFFFFF"
-                android:layout_marginBottom="24dp" />
+                android:orientation="horizontal"
+                android:weightSum="2"
+                android:layout_marginBottom="12dp">
 
+                <Button
+                    android:id="@+id/btnTestAlert"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="🔊 టెస్ట్ అలర్ట్"
+                    android:backgroundTint="#10B981"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginEnd="6dp" />
+
+                <Button
+                    android:id="@+id/btnExportPdf"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="📄 PDF రిపోర్ట్"
+                    android:backgroundTint="#4F46E5"
+                    android:textColor="#FFFFFF"
+                    android:layout_marginStart="6dp" />
+            </LinearLayout>
+
+            <!-- Popup Card (Dynamic) -->
             <LinearLayout
                 android:id="@+id/cardPayment"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:background="#FFFFFF"
-                android:padding="24dp"
+                android:background="#DCFCE7"
+                android:padding="16dp"
                 android:visibility="gone"
-                android:elevation="6dp"
+                android:layout_marginBottom="12dp"
                 android:gravity="center">
 
                 <TextView
@@ -77,19 +221,36 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="₹ 0"
-                    android:textSize="36sp"
+                    android:textSize="32sp"
                     android:textStyle="bold"
-                    android:textColor="#16A34A" />
+                    android:textColor="#15803D" />
 
                 <TextView
                     android:id="@+id/tvUpiApp"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="UPI App"
-                    android:textSize="18sp"
-                    android:textColor="#4B5563"
-                    android:layout_marginTop="8dp" />
+                    android:textSize="15sp"
+                    android:textColor="#166534"
+                    android:layout_marginTop="4dp" />
             </LinearLayout>
+
+            <!-- Transaction History Header -->
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="తాజా లావాదేవీల జాబితా (History)"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:textColor="#1F2937"
+                android:layout_marginBottom="8dp" />
+
+            <!-- Dynamic List for History -->
+            <LinearLayout
+                android:id="@+id/layoutHistoryList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
 
         </LinearLayout>
     </ScrollView>
@@ -98,5 +259,4 @@
         android:id="@+id/konfettiView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
-
-</RelativeLayout>
+</LinearLayout>

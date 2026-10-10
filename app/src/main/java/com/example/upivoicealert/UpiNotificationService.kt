@@ -28,10 +28,14 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val result = tts?.setLanguage(Locale("te", "IN"))
-            if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                tts?.setLanguage(Locale("en", "IN"))
+            val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
+            val langCode = prefs.getString("voice_lang", "te") ?: "te"
+            val loc = when (langCode) {
+                "hi" -> Locale("hi", "IN")
+                "en" -> Locale("en", "IN")
+                else -> Locale("te", "IN")
             }
+            tts?.setLanguage(loc)
             tts?.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
@@ -39,13 +43,6 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
                     .build()
             )
             isTtsReady = true
-        } else {
-            tts = TextToSpeech(applicationContext) { s ->
-                if (s == TextToSpeech.SUCCESS) {
-                    tts?.language = Locale.getDefault()
-                    isTtsReady = true
-                }
-            }
         }
     }
 
@@ -88,9 +85,9 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
                 lower.contains("added") ||
                 lower.contains("జమ") ||
                 lower.contains("వచ్చింది") ||
-                lower.contains("అందాయి")
+                lower.contains("అందాయి") ||
+                lower.contains("प्राप्त")
 
-        // డెబిట్ అయిన వాటిని వదిలివేయడానికి
         if (!isCredit || lower.contains("debited") || lower.contains("sent to") || lower.contains("paid to")) {
             return
         }
@@ -98,15 +95,23 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         val amount = extractAmount(fullText)
         if (!amount.isNullOrEmpty()) {
             val currentTime = System.currentTimeMillis()
-            // ఒకే పేమెంట్ 5 సెకన్లలో 2 సార్లు రాకుండా రక్షణ
             if (amount == lastAmount && (currentTime - lastTime) < 5000) {
                 return
             }
             lastAmount = amount
             lastTime = currentTime
 
-            val voiceMsg = "$upiApp ద్వారా $amount రూపాయలు అందాయి"
-            speakLoudly(voiceMsg)
+            val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
+            val langCode = prefs.getString("voice_lang", "te") ?: "te"
+            val defaultTemplate = when (langCode) {
+                "hi" -> "{app} par {amount} rupaye prapt hue"
+                "en" -> "Received {amount} rupees on {app}"
+                else -> "{app} ద్వారా {amount} రూపాయలు అందాయి"
+            }
+            val template = prefs.getString("voice_template", defaultTemplate) ?: defaultTemplate
+            val voiceMsg = template.replace("{app}", upiApp).replace("{amount}", amount)
+
+            speakCustomLoudly(voiceMsg, langCode)
 
             CoroutineScope(Dispatchers.IO).launch {
                 AppDatabase.getInstance(applicationContext).insertPayment(amount, upiApp)
@@ -124,7 +129,7 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
     private fun extractAmount(text: String): String? {
         val patterns = listOf(
             "(?:Rs\\.?|INR|₹)\\s*([0-9,]+(?:\\.[0-9]{1,2})?)",
-            "([0-9,]+(?:\\.[0-9]{1,2})?)\\s*(?:Rs\\.?|INR|₹|రూపాయలు)",
+            "([0-9,]+(?:\\.[0-9]{1,2})?)\\s*(?:Rs\\.?|INR|₹|రూపాయలు|rupees)",
             "received\\s*(?:Rs\\.?|INR|₹)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)",
             "credited\\s*(?:by|with)?\\s*(?:Rs\\.?|INR|₹)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)",
             "paid\\s+you\\s*(?:Rs\\.?|INR|₹)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)"
@@ -142,11 +147,21 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         return null
     }
 
-    private fun speakLoudly(message: String) {
+    private fun speakCustomLoudly(message: String, langCode: String) {
+        val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
+        val volPercent = prefs.getInt("voice_volume", 100)
+
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        // సౌండ్ పెద్దగా రావడానికి మీడియా & అలారమ్ వాల్యూమ్‌ను 85-100% కి సెట్ చేయడం
         val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
-        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (maxVol * 0.9).toInt(), 0)
+        val target = ((volPercent / 100.0) * maxVol).toInt().coerceIn(0, maxVol)
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, target, 0)
+
+        val loc = when (langCode) {
+            "hi" -> Locale("hi", "IN")
+            "en" -> Locale("en", "IN")
+            else -> Locale("te", "IN")
+        }
+        tts?.setLanguage(loc)
 
         val params = Bundle().apply {
             putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
@@ -158,7 +173,7 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         } else {
             tts = TextToSpeech(applicationContext) { status ->
                 if (status == TextToSpeech.SUCCESS) {
-                    tts?.language = Locale("te", "IN")
+                    tts?.language = loc
                     tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "LOUD_UPI_ALERT")
                 }
             }
