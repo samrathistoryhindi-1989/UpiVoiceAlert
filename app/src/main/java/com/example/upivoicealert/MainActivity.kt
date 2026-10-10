@@ -1,5 +1,6 @@
 package com.example.upivoicealert
 
+import android.app.KeyguardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -10,10 +11,12 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.PowerManager
 import android.provider.Settings
 import android.speech.tts.TextToSpeech
 import android.view.Gravity
 import android.view.View
+import android.view.WindowManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
@@ -62,6 +65,10 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // స్క్రీన్ ఆఫ్ లో ఉన్నా లాక్ స్క్రీన్ పై వెలిగి కనిపించేలా చేయడం
+        turnScreenOnAndShowWhenLocked()
+
         setContentView(R.layout.activity_main)
 
         tts = TextToSpeech(applicationContext, this, "com.google.android.tts")
@@ -80,7 +87,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
 
-        // భాష ఎంపిక డ్రాప్‌డౌన్
+        // లాంగ్వేజ్ స్పిన్నర్
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, languages)
         spinnerLanguage?.adapter = adapter
 
@@ -109,7 +116,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // కస్టమ్ వాయిస్ టెంప్లేట్ లోడ్ చేయడం
         val savedVoice = prefs.getString("voice_template", "{app} ద్వారా {amount} రూపాయలు అందాయి")
         etCustomVoice?.setText(savedVoice)
 
@@ -121,7 +127,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         }
 
-        // మాన్యువల్ వాల్యూమ్ స్లైడర్
         val savedVolume = prefs.getInt("voice_volume", 100)
         seekVolume?.progress = savedVolume
         tvVolumeLevel?.text = "🔊 వాల్యూమ్ స్థాయి: $savedVolume%"
@@ -150,6 +155,23 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         checkPermissions()
         refreshHistoryAndSummary()
         handleIntent(intent)
+    }
+
+    private fun turnScreenOnAndShowWhenLocked() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setShowWhenLocked(true)
+            setTurnScreenOn(true)
+            val keyguardManager = getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+            keyguardManager?.requestDismissKeyguard(this, null)
+        } else {
+            @Suppress("DEPRECATION")
+            window.addFlags(
+                WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+                        WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
+                        WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
+                        WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+            )
+        }
     }
 
     private fun updateTtsLanguage(code: String) {
@@ -190,6 +212,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        turnScreenOnAndShowWhenLocked()
         handleIntent(intent)
     }
 
@@ -203,6 +226,8 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
     }
 
     private fun triggerAlert(amount: String, appName: String) {
+        turnScreenOnAndShowWhenLocked()
+
         tvAmount?.text = "₹ $amount"
         tvUpiApp?.text = "$appName ద్వారా అందింది"
         cardPayment?.visibility = View.VISIBLE

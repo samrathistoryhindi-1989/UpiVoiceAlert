@@ -5,6 +5,7 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.os.Bundle
+import android.os.PowerManager
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.speech.tts.TextToSpeech
@@ -101,6 +102,9 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
             lastAmount = amount
             lastTime = currentTime
 
+            // స్క్రీన్ ఆఫ్ లో ఉంటే తక్షణమే స్క్రీన్ వెలిగించడం (Wake Screen)
+            wakeUpScreen()
+
             val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
             val langCode = prefs.getString("voice_lang", "te") ?: "te"
             val defaultTemplate = when (langCode) {
@@ -124,6 +128,20 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
             }
             startActivity(popupIntent)
         }
+    }
+
+    private fun wakeUpScreen() {
+        try {
+            val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
+            if (powerManager != null && !powerManager.isInteractive) {
+                @Suppress("DEPRECATION")
+                val wakeLock = powerManager.newWakeLock(
+                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
+                    "UpiVoiceAlert:WakeLock"
+                )
+                wakeLock.acquire(4000)
+            }
+        } catch (_: Exception) {}
     }
 
     private fun extractAmount(text: String): String? {
