@@ -1,8 +1,10 @@
 package com.example.upivoicealert
 
+import android.content.Context
 import android.content.Intent
 import android.graphics.Paint
 import android.graphics.pdf.PdfDocument
+import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -43,7 +45,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        tts = TextToSpeech(this, this)
+        tts = TextToSpeech(applicationContext, this, "com.google.android.tts")
 
         konfettiView = findViewById(R.id.konfettiView)
         cardPayment = findViewById(R.id.cardPayment)
@@ -58,13 +60,11 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName"))
                 startActivity(intent)
-            } else {
-                Toast.makeText(this, "ఈ డివైస్‌కు అవసరం లేదు", Toast.LENGTH_SHORT).show()
             }
         }
 
         findViewById<Button>(R.id.btnTestAlert).setOnClickListener {
-            triggerAlert("100", "PhonePe (Test)")
+            triggerAlert("100", "PhonePe")
         }
 
         findViewById<Button>(R.id.btnExportPdf).setOnClickListener {
@@ -78,9 +78,16 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         if (status == TextToSpeech.SUCCESS) {
             val result = tts?.setLanguage(Locale("te", "IN"))
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
-                tts?.setLanguage(Locale.ENGLISH)
+                tts?.setLanguage(Locale("en", "IN"))
             }
             isTtsReady = true
+        } else {
+            tts = TextToSpeech(applicationContext, { s ->
+                if (s == TextToSpeech.SUCCESS) {
+                    tts?.language = Locale.getDefault()
+                    isTtsReady = true
+                }
+            })
         }
     }
 
@@ -103,7 +110,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         tvUpiApp?.text = "$appName ద్వారా అందింది"
         cardPayment?.visibility = View.VISIBLE
 
-        speakTelugu("$appName ద్వారా $amount రూపాయలు అందాయి")
+        speakSound("$appName ద్వారా $amount రూపాయలు అందాయి")
 
         val party = Party(
             speed = 10f,
@@ -117,11 +124,20 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         konfettiView?.start(party)
     }
 
-    private fun speakTelugu(msg: String) {
+    private fun speakSound(msg: String) {
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+        if (currentVol == 0) {
+            Toast.makeText(this, "దయచేసి మీడియా వాల్యూమ్ పెంచండి", Toast.LENGTH_SHORT).show()
+        }
+
         if (isTtsReady) {
-            tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, null, "TEST_VOICE")
+            val params = Bundle()
+            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
+            params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
+            tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, params, "ALERT_VOICE")
         } else {
-            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "వాయిస్ ఇంజిన్ ప్రారంభమవుతోంది, కాసేపట్లో మళ్లీ నొక్కండి", Toast.LENGTH_SHORT).show()
         }
     }
 
