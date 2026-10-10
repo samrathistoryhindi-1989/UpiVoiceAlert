@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#F3F4F6">
 
-    <!-- Header & Daily Summary Card -->
+    <!-- Header & Daily Summary Card (Fixed Top) -->
     <LinearLayout
+        android:id="@+id/headerCard"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
@@ -73,10 +73,12 @@
         </LinearLayout>
     </LinearLayout>
 
+    <!-- Scrollable Body Content -->
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_height="match_parent"
+        android:layout_below="@id/headerCard"
+        android:fillViewport="true">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -161,12 +163,13 @@
                     android:layout_height="wrap_content"
                     android:hint="{app} ద్వారా {amount} రూపాయలు అందాయి"
                     android:textSize="14sp"
+                    android:textColor="#111827"
                     android:layout_marginTop="6dp" />
 
                 <Button
                     android:id="@+id/btnSaveCustomVoice"
                     android:layout_width="wrap_content"
-                    android:layout_height="38dp"
+                    android:layout_height="wrap_content"
                     android:text="వాయిస్ సేవ్ చేయండి"
                     android:textSize="12sp"
                     android:backgroundTint="#2563EB"
@@ -204,7 +207,7 @@
                     android:layout_marginStart="6dp" />
             </LinearLayout>
 
-            <!-- Popup Card (Dynamic) -->
+            <!-- Live Alert Popup Card -->
             <LinearLayout
                 android:id="@+id/cardPayment"
                 android:layout_width="match_parent"
@@ -240,17 +243,19 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="తాజా లావాదేవీల జాబితా (History)"
-                android:textSize="15sp"
+                android:textSize="16sp"
                 android:textStyle="bold"
                 android:textColor="#1F2937"
-                android:layout_marginBottom="8dp" />
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="12dp" />
 
-            <!-- Dynamic List for History -->
+            <!-- History List Container -->
             <LinearLayout
                 android:id="@+id/layoutHistoryList"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical" />
+                android:orientation="vertical"
+                android:layout_marginBottom="24dp" />
 
         </LinearLayout>
     </ScrollView>
@@ -259,4 +264,5 @@
         android:id="@+id/konfettiView"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
-</LinearLayout>
+
+</RelativeLayout>
