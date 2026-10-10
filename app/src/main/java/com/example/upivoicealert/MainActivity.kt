@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
 
-        // లాంగ్వేజ్ స్పిన్నర్
+        // భాష ఎంపిక డ్రాప్‌డౌన్
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, languages)
         spinnerLanguage?.adapter = adapter
 
@@ -109,7 +109,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // కస్టమ్ వాయిస్ టెంప్లేట్
+        // కస్టమ్ వాయిస్ టెంప్లేట్ లోడ్ చేయడం
         val savedVoice = prefs.getString("voice_template", "{app} ద్వారా {amount} రూపాయలు అందాయి")
         etCustomVoice?.setText(savedVoice)
 
@@ -283,7 +283,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 if (list.isEmpty()) {
                     val tvEmpty = TextView(this@MainActivity).apply {
                         text = "ఇంకా ఎలాంటి లావాదేవీలు లేవు"
-                        textSize = 14sp
+                        textSize = 14f
                         setTextColor(Color.parseColor("#9CA3AF"))
                         gravity = Gravity.CENTER
                         setPadding(0, 30, 0, 30)
@@ -310,14 +310,14 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                         val tvApp = TextView(this@MainActivity).apply {
                             text = record.upiApp
-                            textSize = 15sp
+                            textSize = 15f
                             setTextColor(Color.parseColor("#1F2937"))
                             typeface = android.graphics.Typeface.DEFAULT_BOLD
                         }
 
                         val tvDate = TextView(this@MainActivity).apply {
                             text = sdf.format(Date(record.timestamp))
-                            textSize = 12sp
+                            textSize = 12f
                             setTextColor(Color.parseColor("#6B7280"))
                             setPadding(0, 4, 0, 0)
                         }
@@ -327,7 +327,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
                         val tvAmt = TextView(this@MainActivity).apply {
                             text = "+ ₹" + record.amount
-                            textSize = 16sp
+                            textSize = 16f
                             setTextColor(Color.parseColor("#16A34A"))
                             typeface = android.graphics.Typeface.DEFAULT_BOLD
                             gravity = Gravity.END or Gravity.CENTER_VERTICAL
