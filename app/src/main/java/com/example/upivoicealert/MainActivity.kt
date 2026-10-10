@@ -80,7 +80,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
 
         val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
 
-        // లాంగ్వేజ్ స్పిన్నర్ సెటప్
+        // లాంగ్వేజ్ స్పిన్నర్
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, languages)
         spinnerLanguage?.adapter = adapter
 
@@ -96,7 +96,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     prefs.edit().putString("voice_lang", selectedCode).apply()
                     updateTtsLanguage(selectedCode)
 
-                    // భాష మారినప్పుడు డీఫాల్ట్ మెసేజ్ మారడం
                     val defaultMsg = when (selectedCode) {
                         "hi" -> "{app} par {amount} rupaye prapt hue"
                         "en" -> "Received {amount} rupees on {app}"
@@ -110,7 +109,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {}
         }
 
-        // కస్టమ్ వాయిస్ టెంప్లేట్ లోడ్
+        // కస్టమ్ వాయిస్ టెంప్లేట్
         val savedVoice = prefs.getString("voice_template", "{app} ద్వారా {amount} రూపాయలు అందాయి")
         etCustomVoice?.setText(savedVoice)
 
@@ -122,7 +121,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
             }
         }
 
-        // వాల్యూమ్ స్లైడర్
+        // మాన్యువల్ వాల్యూమ్ స్లైడర్
         val savedVolume = prefs.getInt("voice_volume", 100)
         seekVolume?.progress = savedVolume
         tvVolumeLevel?.text = "🔊 వాల్యూమ్ స్థాయి: $savedVolume%"
@@ -291,7 +290,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                     }
                     layoutHistoryList?.addView(tvEmpty)
                 } else {
-                    for (record in list.take(20)) {
+                    for (record in list.take(30)) {
                         val rowCard = LinearLayout(this@MainActivity).apply {
                             orientation = LinearLayout.HORIZONTAL
                             setBackgroundColor(Color.WHITE)

@@ -5,7 +5,7 @@
     android:orientation="vertical"
     android:background="#F3F4F6">
 
-    <!-- Header & Daily Summary -->
+    <!-- Header & Daily Summary Card -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -84,7 +84,7 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Language Selection Card -->
+            <!-- 1. Language Selection Card -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -109,7 +109,7 @@
                     android:layout_marginTop="6dp" />
             </LinearLayout>
 
-            <!-- Volume Control Card -->
+            <!-- 2. Manual Volume Slider Card -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -137,7 +137,7 @@
                     android:layout_marginTop="8dp" />
             </LinearLayout>
 
-            <!-- Custom Voice Message Template Card -->
+            <!-- 3. Custom Voice Template Card -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
