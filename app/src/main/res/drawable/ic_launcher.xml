@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Background Circle -->
+    <path
+        android:fillColor="#1E3A8A"
+        android:pathData="M54,4 A50,50 0 1,1 53.9,4 Z" />
+    <!-- Inner Accent Ring -->
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"
+        android:pathData="M54,10 A44,44 0 1,1 53.9,10 Z" />
+    <!-- Speaker / Sound Wave Icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M32,45 L40,45 L50,35 L50,73 L40,63 L32,63 Z" />
+    <path
+        android:strokeColor="#10B981"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M58,44 A14,14 0 0,1 58,64" />
+    <path
+        android:strokeColor="#F59E0B"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M65,37 A24,24 0 0,1 65,71" />
+    <path
+        android:strokeColor="#3B82F6"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M72,30 A34,34 0 0,1 72,78" />
+</vector>

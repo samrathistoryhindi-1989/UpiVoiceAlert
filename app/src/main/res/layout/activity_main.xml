@@ -16,9 +16,9 @@
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="UPI Voice Alert Pro"
+            android:text="Samrat Soundbox"
             android:textColor="#FFFFFF"
-            android:textSize="20sp"
+            android:textSize="22sp"
             android:textStyle="bold" />
 
         <LinearLayout
@@ -161,7 +161,7 @@
                     android:id="@+id/etCustomVoice"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:hint="{app} ద్వారా {amount} రూపాయలు అందాయి"
+                    android:hint="సామ్రాట్ గారికి {app} ద్వారా {amount} రూపాయలు అందాయి"
                     android:textSize="14sp"
                     android:textColor="#111827"
                     android:layout_marginTop="6dp" />
