@@ -2,6 +2,7 @@ package com.example.upivoicealert
 
 import android.content.Context
 import android.content.Intent
+import android.media.AudioAttributes
 import android.media.AudioManager
 import android.os.Bundle
 import android.service.notification.NotificationListenerService
@@ -17,6 +18,8 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
 
     private var tts: TextToSpeech? = null
     private var isTtsReady = false
+    private var lastAmount = ""
+    private var lastTime: Long = 0
 
     override fun onCreate() {
         super.onCreate()
@@ -29,6 +32,12 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
             if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
                 tts?.setLanguage(Locale("en", "IN"))
             }
+            tts?.setAudioAttributes(
+                AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build()
+            )
             isTtsReady = true
         } else {
             tts = TextToSpeech(applicationContext) { s ->
@@ -45,12 +54,13 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         val title = extras.getString("android.title") ?: ""
         val text = extras.getCharSequence("android.text")?.toString() ?: ""
         val bigText = extras.getCharSequence("android.bigText")?.toString() ?: ""
-        val fullText = "$title $text $bigText".trim()
+        val subText = extras.getCharSequence("android.subText")?.toString() ?: ""
+        val fullText = "$title $text $bigText $subText".trim()
 
         if (fullText.isEmpty()) return
 
-        val pkg = sbn.packageName.lowercase(Locale.ROOT)
-        var upiApp = "UPI"
+        val pkg = (sbn.packageName ?: "").lowercase(Locale.ROOT)
+        var upiApp = ""
 
         when {
             pkg.contains("paisa") || pkg.contains("nbu") -> upiApp = "Google Pay"
@@ -59,78 +69,97 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
             pkg.contains("bhim") || pkg.contains("npci") -> upiApp = "BHIM"
             pkg.contains("cred") -> upiApp = "CRED"
             pkg.contains("amazon") -> upiApp = "Amazon Pay"
+            pkg.contains("mms") || pkg.contains("messaging") || pkg.contains("sms") -> upiApp = "Bank SMS"
             else -> {
-                if (fullText.contains("UPI", true) || fullText.contains("credited", true) || fullText.contains("received", true)) {
-                    upiApp = "Bank UPI"
-                } else {
-                    return
+                if (fullText.contains("UPI", true) || fullText.contains("bank", true) || fullText.contains("a/c", true)) {
+                    upiApp = "UPI Payment"
                 }
             }
         }
 
-        // క్రెడిట్/రిసీవ్డ్ పదాలు ఉన్నాయో లేదో తనిఖీ
-        val lowerText = fullText.lowercase(Locale.ROOT)
-        val isCredit = lowerText.contains("received") ||
-                lowerText.contains("credited") ||
-                lowerText.contains("deposited") ||
-                lowerText.contains("sent you") ||
-                lowerText.contains("జమ") ||
-                lowerText.contains("అందాయి")
+        if (upiApp.isEmpty()) return
 
-        if (isCredit) {
-            val amount = extractAmount(fullText)
-            if (amount != null && amount.isNotEmpty()) {
-                val voiceMsg = "$upiApp ద్వారా $amount రూపాయలు అందాయి"
-                speakOut(voiceMsg)
+        val lower = fullText.lowercase(Locale.ROOT)
+        val isCredit = lower.contains("received") ||
+                lower.contains("credited") ||
+                lower.contains("deposited") ||
+                lower.contains("sent you") ||
+                lower.contains("paid you") ||
+                lower.contains("added") ||
+                lower.contains("జమ") ||
+                lower.contains("వచ్చింది") ||
+                lower.contains("అందాయి")
 
-                CoroutineScope(Dispatchers.IO).launch {
-                    AppDatabase.getInstance(applicationContext).insertPayment(amount, upiApp)
-                }
+        // డెబిట్ అయిన వాటిని వదిలివేయడానికి
+        if (!isCredit || lower.contains("debited") || lower.contains("sent to") || lower.contains("paid to")) {
+            return
+        }
 
-                val popupIntent = Intent(applicationContext, MainActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
-                    putExtra("AMOUNT", amount)
-                    putExtra("APP", upiApp)
-                }
-                startActivity(popupIntent)
+        val amount = extractAmount(fullText)
+        if (!amount.isNullOrEmpty()) {
+            val currentTime = System.currentTimeMillis()
+            // ఒకే పేమెంట్ 5 సెకన్లలో 2 సార్లు రాకుండా రక్షణ
+            if (amount == lastAmount && (currentTime - lastTime) < 5000) {
+                return
             }
+            lastAmount = amount
+            lastTime = currentTime
+
+            val voiceMsg = "$upiApp ద్వారా $amount రూపాయలు అందాయి"
+            speakLoudly(voiceMsg)
+
+            CoroutineScope(Dispatchers.IO).launch {
+                AppDatabase.getInstance(applicationContext).insertPayment(amount, upiApp)
+            }
+
+            val popupIntent = Intent(applicationContext, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                putExtra("AMOUNT", amount)
+                putExtra("APP", upiApp)
+            }
+            startActivity(popupIntent)
         }
     }
 
     private fun extractAmount(text: String): String? {
-        val regexPatterns = listOf(
-            "(?:Rs\\.?|INR|₹|INR\\s*Rs\\.?)\\s*([0-9,]+(?:\\.[0-9]{1,2})?)",
+        val patterns = listOf(
+            "(?:Rs\\.?|INR|₹)\\s*([0-9,]+(?:\\.[0-9]{1,2})?)",
             "([0-9,]+(?:\\.[0-9]{1,2})?)\\s*(?:Rs\\.?|INR|₹|రూపాయలు)",
-            "received\\s+([0-9,]+(?:\\.[0-9]{1,2})?)",
-            "credited\\s+with\\s+([0-9,]+(?:\\.[0-9]{1,2})?)"
+            "received\\s*(?:Rs\\.?|INR|₹)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)",
+            "credited\\s*(?:by|with)?\\s*(?:Rs\\.?|INR|₹)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)",
+            "paid\\s+you\\s*(?:Rs\\.?|INR|₹)?\\s*([0-9,]+(?:\\.[0-9]{1,2})?)"
         )
 
-        for (p in regexPatterns) {
+        for (p in patterns) {
             val matcher = Pattern.compile(p, Pattern.CASE_INSENSITIVE).matcher(text)
             if (matcher.find()) {
-                val found = matcher.group(1)?.replace(",", "")?.trim()
-                if (!found.isNullOrEmpty() && found.toDoubleOrNull() != null) {
-                    return found
+                val clean = matcher.group(1)?.replace(",", "")?.trim()
+                if (!clean.isNullOrEmpty() && clean.toDoubleOrNull() != null && clean.toDouble() > 0) {
+                    return clean
                 }
             }
         }
         return null
     }
 
-    private fun speakOut(message: String) {
+    private fun speakLoudly(message: String) {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        // సౌండ్ పెద్దగా రావడానికి మీడియా & అలారమ్ వాల్యూమ్‌ను 85-100% కి సెట్ చేయడం
+        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (maxVol * 0.9).toInt(), 0)
+
         val params = Bundle().apply {
             putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
             putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
         }
 
         if (isTtsReady) {
-            tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "UPI_LIVE_ALERT")
+            tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "LOUD_UPI_ALERT")
         } else {
             tts = TextToSpeech(applicationContext) { status ->
                 if (status == TextToSpeech.SUCCESS) {
                     tts?.language = Locale("te", "IN")
-                    tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "UPI_LIVE_ALERT")
+                    tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "LOUD_UPI_ALERT")
                 }
             }
         }

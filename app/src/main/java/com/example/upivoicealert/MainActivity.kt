@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         }
 
         findViewById<Button>(R.id.btnTestAlert).setOnClickListener {
-            triggerAlert("100", "PhonePe")
+            triggerAlert("500", "PhonePe")
         }
 
         findViewById<Button>(R.id.btnExportPdf).setOnClickListener {
@@ -81,13 +81,6 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
                 tts?.setLanguage(Locale("en", "IN"))
             }
             isTtsReady = true
-        } else {
-            tts = TextToSpeech(applicationContext, { s ->
-                if (s == TextToSpeech.SUCCESS) {
-                    tts?.language = Locale.getDefault()
-                    isTtsReady = true
-                }
-            })
         }
     }
 
@@ -110,7 +103,7 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         tvUpiApp?.text = "$appName ద్వారా అందింది"
         cardPayment?.visibility = View.VISIBLE
 
-        speakSound("$appName ద్వారా $amount రూపాయలు అందాయి")
+        speakLoudly("$appName ద్వారా $amount రూపాయలు అందాయి")
 
         val party = Party(
             speed = 10f,
@@ -124,20 +117,20 @@ class MainActivity : AppCompatActivity(), TextToSpeech.OnInitListener {
         konfettiView?.start(party)
     }
 
-    private fun speakSound(msg: String) {
+    private fun speakLoudly(msg: String) {
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-        val currentVol = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
-        if (currentVol == 0) {
-            Toast.makeText(this, "దయచేసి మీడియా వాల్యూమ్ పెంచండి", Toast.LENGTH_SHORT).show()
+        val maxVol = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+        audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, (maxVol * 0.9).toInt(), 0)
+
+        val params = Bundle().apply {
+            putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
+            putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
         }
 
         if (isTtsReady) {
-            val params = Bundle()
-            params.putInt(TextToSpeech.Engine.KEY_PARAM_STREAM, AudioManager.STREAM_MUSIC)
-            params.putFloat(TextToSpeech.Engine.KEY_PARAM_VOLUME, 1.0f)
             tts?.speak(msg, TextToSpeech.QUEUE_FLUSH, params, "ALERT_VOICE")
         } else {
-            Toast.makeText(this, "వాయిస్ ఇంజిన్ ప్రారంభమవుతోంది, కాసేపట్లో మళ్లీ నొక్కండి", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, msg, Toast.LENGTH_SHORT).show()
         }
     }
 
