@@ -47,7 +47,7 @@
                 android:id="@+id/btnTestAlert"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="🔊 టెస్ట్ వాయిస్ & పాపప్ (Test Alert)"
+                android:text="🔊 టెస్ట్ వాయిస్ మరియు పాపప్"
                 android:backgroundTint="#10B981"
                 android:textColor="#FFFFFF"
                 android:layout_marginBottom="12dp" />
