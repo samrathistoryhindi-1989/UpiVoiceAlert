@@ -24,27 +24,44 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
 
     override fun onCreate() {
         super.onCreate()
+        initTTS()
+    }
+
+    private fun initTTS() {
         tts = TextToSpeech(applicationContext, this, "com.google.android.tts")
     }
 
     override fun onInit(status: Int) {
         if (status == TextToSpeech.SUCCESS) {
-            val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
-            val langCode = prefs.getString("voice_lang", "te") ?: "te"
-            val loc = when (langCode) {
-                "hi" -> Locale("hi", "IN")
-                "en" -> Locale("en", "IN")
-                else -> Locale("te", "IN")
-            }
-            tts?.setLanguage(loc)
-            tts?.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
-                    .setUsage(AudioAttributes.USAGE_ALARM)
-                    .build()
-            )
+            setupTtsSettings()
             isTtsReady = true
+        } else {
+            // ఫాల్‌బ్యాక్ డీఫాల్ట్ ఇంజిన్
+            tts = TextToSpeech(applicationContext) { s ->
+                if (s == TextToSpeech.SUCCESS) {
+                    setupTtsSettings()
+                    isTtsReady = true
+                }
+            }
         }
+    }
+
+    private fun setupTtsSettings() {
+        val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
+        val langCode = prefs.getString("voice_lang", "te") ?: "te"
+        val loc = when (langCode) {
+            "hi" -> Locale("hi", "IN")
+            "en" -> Locale("en", "IN")
+            else -> Locale("te", "IN")
+        }
+        tts?.setLanguage(loc)
+        tts?.setSpeechRate(1.05f) // సహజంగా, వేగంగా పలకడానికి
+        tts?.setAudioAttributes(
+            AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .build()
+        )
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification?) {
@@ -96,31 +113,33 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         val amount = extractAmount(fullText)
         if (!amount.isNullOrEmpty()) {
             val currentTime = System.currentTimeMillis()
-            if (amount == lastAmount && (currentTime - lastTime) < 5000) {
+            if (amount == lastAmount && (currentTime - lastTime) < 4000) {
                 return
             }
             lastAmount = amount
             lastTime = currentTime
 
-            // స్క్రీన్ ఆఫ్ లో ఉంటే తక్షణమే స్క్రీన్ వెలిగించడం (Wake Screen)
-            wakeUpScreen()
+            // 1. స్క్రీన్‌ను వెంటనే ఆన్ చేయడం & CPU ని నిద్రలేపడం
+            wakeUpDeviceImmediately()
 
             val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
             val langCode = prefs.getString("voice_lang", "te") ?: "te"
             val defaultTemplate = when (langCode) {
-                "hi" -> "{app} par {amount} rupaye prapt hue"
-                "en" -> "Received {amount} rupees on {app}"
-                else -> "{app} ద్వారా {amount} రూపాయలు అందాయి"
+                "hi" -> "Samrat ji ko {app} par {amount} rupaye prapt hue"
+                "en" -> "Received {amount} rupees on {app} for Samrat"
+                else -> "సామ్రాట్ గారికి {app} ద్వారా {amount} రూపాయలు అందాయి"
             }
             val template = prefs.getString("voice_template", defaultTemplate) ?: defaultTemplate
             val voiceMsg = template.replace("{app}", upiApp).replace("{amount}", amount)
 
-            speakCustomLoudly(voiceMsg, langCode)
+            // 2. ఆలస్యం లేకుండా వెంటనే గట్టిగా అనౌన్స్ చేయడం
+            speakInstantly(voiceMsg, langCode)
 
             CoroutineScope(Dispatchers.IO).launch {
                 AppDatabase.getInstance(applicationContext).insertPayment(amount, upiApp)
             }
 
+            // 3. లాక్ స్క్రీన్ మీదే పాపప్ రావడం కోసం
             val popupIntent = Intent(applicationContext, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
                 putExtra("AMOUNT", amount)
@@ -130,16 +149,16 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         }
     }
 
-    private fun wakeUpScreen() {
+    private fun wakeUpDeviceImmediately() {
         try {
             val powerManager = getSystemService(Context.POWER_SERVICE) as? PowerManager
-            if (powerManager != null && !powerManager.isInteractive) {
+            if (powerManager != null) {
                 @Suppress("DEPRECATION")
                 val wakeLock = powerManager.newWakeLock(
-                    PowerManager.SCREEN_BRIGHT_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP,
-                    "UpiVoiceAlert:WakeLock"
+                    PowerManager.FULL_WAKE_LOCK or PowerManager.ACQUIRE_CAUSES_WAKEUP or PowerManager.ON_AFTER_RELEASE,
+                    "SamratSoundbox:InstantWake"
                 )
-                wakeLock.acquire(4000)
+                wakeLock.acquire(10000) // 10 సెకన్ల పాటు స్క్రీన్ ఆన్‌లో ఉంటుంది
             }
         } catch (_: Exception) {}
     }
@@ -165,7 +184,7 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         return null
     }
 
-    private fun speakCustomLoudly(message: String, langCode: String) {
+    private fun speakInstantly(message: String, langCode: String) {
         val prefs = getSharedPreferences("UpiVoicePrefs", Context.MODE_PRIVATE)
         val volPercent = prefs.getInt("voice_volume", 100)
 
@@ -187,12 +206,13 @@ class UpiNotificationService : NotificationListenerService(), TextToSpeech.OnIni
         }
 
         if (isTtsReady) {
-            tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "LOUD_UPI_ALERT")
+            tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "INSTANT_SAMRAT_ALERT")
         } else {
+            initTTS()
             tts = TextToSpeech(applicationContext) { status ->
                 if (status == TextToSpeech.SUCCESS) {
                     tts?.language = loc
-                    tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "LOUD_UPI_ALERT")
+                    tts?.speak(message, TextToSpeech.QUEUE_FLUSH, params, "INSTANT_SAMRAT_ALERT")
                 }
             }
         }
